@@ -13,6 +13,7 @@
 (defvar *title-text-style* (clim:make-text-style :fix :bold 24))
 
 (defvar *game-highscore* 0)
+(defvar *game-timer* nil)
 
 
 ;;; game UI elements and layout
@@ -35,16 +36,15 @@
                   :align-x :center
                   :text-style *title-text-style*)
      (score-box :application
-                :align-x :right
                 :scroll-bars nil
                 :display-function 'draw-score-box)
      (tag-line :label
                :label "Join the numbers and get to the 2048 tile!")
      (new-game-button :push-button
                       :label "New game")
-     (timer-box :text-field
-                :editable-p nil
-                :value "00:00:00")
+     (timer-box :application
+                :scroll-bars nil
+                :display-function 'draw-timer-box)
      (game-main :application
                 :width 800
                 :height 800
@@ -59,41 +59,65 @@
     (:layouts
      (default
          (clim:vertically ()
-           title-label
-           score-box
-           (clim:horizontally ()
-             tag-line new-game-button)
-           timer-box
-           game-main
-           instructions-box
-           (setf (game-debug-output clim:*application-frame*) debug-output)))))
+           (2/32 title-label)
+           (1/32 score-box)
+           (1/32 (clim:horizontally ()
+                  tag-line new-game-button))
+           (1/32 timer-box)
+           (25/32 game-main)
+           (1/32 instructions-box)
+           (1/32 (setf (game-debug-output clim:*application-frame*) debug-output))))))
+
+
+;;; utils
+(defun debug-format (format-string &rest format-args)
+  (when clim:*application-frame*
+    (setf (clim:gadget-value (game-debug-output clim:*application-frame*))
+          (apply #'format nil format-string format-args))))
 
 
 ;;; game logic
 ;;; TODO
+
+(defun game-timer-started ()
+  *game-timer*)
+
+(defun start-game-timer ()
+  (setf *game-timer* (local-time:now)))
+
+(defun stop-game-timer ()
+  (setf *game-timer* nil))
+
+(defun get-game-time-as-string ()
+  (if *game-timer*
+      (progn
+        (let* ((diff (local-time:timestamp-difference (local-time:now) *game-timer*))
+               (seconds (floor (mod diff 60)))
+               (minutes (floor (mod (/ diff 60) 60)))
+               (hours (floor (/ diff 3600))))
+          (format nil "~2,'0d:~2,'0d:~2,'0d" hours minutes seconds)))
+      (progn
+        (debug-format "Game timer not started!")
+        "00:00:00")))
 
 
 ;;; input
 ;;; TODO Figure out one day how to use arrow keys instead.
 (define-2048-game-command (move-left :keystroke #\a)
     ()
-  (let ((label (game-debug-output clim:*application-frame*)))
-    (setf (clim:gadget-value label) "Move left invoked!")))
+  (debug-format "CMD: Move left invoked!"))
 
 (define-2048-game-command (move-right :keystroke #\d)
     ()
-  (let ((label (game-debug-output clim:*application-frame*)))
-    (setf (clim:gadget-value label) "Move right invoked!")))
+  (debug-format "CMD: Move right invoked!"))
 
 (define-2048-game-command (move-up :keystroke #\w)
     ()
-  (let ((label (game-debug-output clim:*application-frame*)))
-    (setf (clim:gadget-value label) "Move up invoked!")))
+  (debug-format "CMD: Move up invoked!"))
 
 (define-2048-game-command (move-down :keystroke #\s)
     ()
-  (let ((label (game-debug-output clim:*application-frame*)))
-    (setf (clim:gadget-value label) "Move down invoked!")))
+  (debug-format "CMD: Move down invoked!"))
 
 
 ;;; drawing
@@ -124,6 +148,11 @@
         (format stream "BEST"))
       (clim:formatting-cell (stream :align-x :center)
         (format stream "~A" (game-highscore 2048-game))))))
+
+(defmethod draw-timer-box ((2048-game 2048-game) stream &key max-width max-height)
+  (declare (ignore max-width max-height))
+  (format stream (get-game-time-as-string)))
+
 
 ;;; entry point
 (defun run ()

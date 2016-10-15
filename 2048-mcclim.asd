@@ -17,7 +17,8 @@
   :encoding :utf-8
   
   :depends-on (#:alexandria
-               #:mcclim)
+               #:mcclim
+               #:local-time)
   
   :components ((:file "package")
                (:file "version")

@@ -7,10 +7,29 @@
                                          (float (/ num 255)))
                                        (list r g b))))
 
+(defun cell-text-sized (size)
+  (clim:make-text-style :fix :bold size))
+
 (defparameter +color-app-background+ (hex->color #xFA #xF8 #xEF))   ;#faf8ef
 (defparameter +color-board-background+ (hex->color #xBB #xAD #xA0)) ;#bbada0
 
 (defvar *title-text-style* (clim:make-text-style :fix :bold 24))
+
+(defvar *tile-styles* `((0 ,(hex->color #xFA #xF8 #xEF) ,(hex->color #xFF #x00 #x00) 30)
+                        (2 ,(hex->color #xEE #xE4 #xDA) ,(hex->color #xBB #xAD #xA0) 30)
+                        (4 ,(hex->color #xED #xE0 #xC8) ,(hex->color #xBB #xAD #xA0) 30)
+                        (8 ,(hex->color #xF2 #xB1 #x79) ,(hex->color #xF9 #xF6 #xF2) 30)
+                        (16 ,(hex->color #xF5 #x95 #x63) ,(hex->color #xF9 #xF6 #xF2) 30)
+                        (32 ,(hex->color #xF6 #x7C #x5F) ,(hex->color #xF9 #xF6 #xF2) 30)
+                        (64 ,(hex->color #xF6 #x5E #x3B) ,(hex->color #xF9 #xF6 #xF2) 30)
+                        (128 ,(hex->color #xED #xCF #x72) ,(hex->color #xF9 #xF6 #xF2) 28)
+                        (256 ,(hex->color #xED #xCC #x61) ,(hex->color #xF9 #xF6 #xF2) 28)
+                        (512 ,(hex->color #xED #xC8 #x50) ,(hex->color #xF9 #xF6 #xF2) 28)
+                        (1024 ,(hex->color #xED #xC5 #x3F) ,(hex->color #xF9 #xF6 #xF2) 24)
+                        (2048 ,(hex->color #xED #xC2 #x2E) ,(hex->color #xF9 #xF6 #xF2) 24)
+                        (4096 ,(hex->color #x3C #x3A #x32) ,(hex->color #xF9 #xF6 #xF2) 24)
+                        (8192 ,(hex->color #x3C #x3A #x32) ,(hex->color #xF9 #xF6 #xF2) 24)
+                        (16384 ,(hex->color #x3C #x3A #x32) ,(hex->color #xF9 #xF6 #xF2) 20)))
 
 (defvar *game-highscore* 0)
 (defvar *game-timer* nil)
@@ -19,7 +38,7 @@
 ;;; game UI elements and layout
 (clim:define-application-frame 2048-game
     ()
-  ((game-board :initform (make-array '(4 4))
+  ((game-board :initform (make-array '(4 4) :initial-contents '((0 2 4 8) (16 32 64 128) (256 512 1024 2048) (4096 8192 16384 32768)))
                :accessor game-board)
    (game-score :initform 0
                :accessor game-score)
@@ -122,20 +141,20 @@
 
 ;;; drawing
 
+(defun board-cell-style (value)
+  (let ((style (find-if (lambda (style)
+                          (= value (first style)))
+                        *tile-styles*)))
+    (or style (car (last *tile-styles*)))))
+
 (defun board-cell-background-ink (value)
-  (declare (ignore value))
-  ;; TODO
-  +color-app-background+)
+  (second (board-cell-style value)))
 
 (defun board-cell-text-ink (value)
-  (declare (ignore value))
-  ;; TODO
-  +color-board-background+)
+  (third (board-cell-style value)))
 
 (defun board-cell-text-size (value)
-  (declare (ignore value))
-  ;; TODO
-  24)
+  (fourth (board-cell-style value)))
 
 (defun draw-board-cell (stream board row column)
   ;; TODO prettier game board
@@ -144,13 +163,14 @@
                           0 0
                           100 100
                           :ink (board-cell-background-ink value))
-    (clim:draw-text* stream
-                     (format nil "~D" value)
-                     50 50
-                     :align-x :center
-                     :align-y :center
-                     :ink (board-cell-text-ink value)
-                     :text-size (board-cell-text-size value))))
+    (when (> value 0)
+      (clim:draw-text* stream
+                       (format nil "~D" value)
+                       50 50
+                       :align-x :center
+                       :align-y :center
+                       :ink (board-cell-text-ink value)
+                       :text-size (board-cell-text-size value)))))
 
 (defmethod draw-game-board ((2048-game 2048-game) stream &key max-width max-height)
   (declare (ignore max-width max-height))

@@ -122,18 +122,48 @@
 
 ;;; drawing
 
+(defun board-cell-background-ink (value)
+  (declare (ignore value))
+  ;; TODO
+  +color-app-background+)
+
+(defun board-cell-text-ink (value)
+  (declare (ignore value))
+  ;; TODO
+  +color-board-background+)
+
+(defun board-cell-text-size (value)
+  (declare (ignore value))
+  ;; TODO
+  24)
+
 (defun draw-board-cell (stream board row column)
   ;; TODO prettier game board
-  (format stream "|(~A ~A) - ~A|" row column (aref board row column)))
+  (let ((value (aref board row column)))
+    (clim:draw-rectangle* stream
+                          0 0
+                          100 100
+                          :ink (board-cell-background-ink value))
+    (clim:draw-text* stream
+                     (format nil "~D" value)
+                     50 50
+                     :align-x :center
+                     :align-y :center
+                     :ink (board-cell-text-ink value)
+                     :text-size (board-cell-text-size value))))
 
 (defmethod draw-game-board ((2048-game 2048-game) stream &key max-width max-height)
   (declare (ignore max-width max-height))
-  (clim:formatting-table (stream)
+  (clim:draw-rectangle* stream 0 0 450 450  :ink +color-board-background+)
+  (clim:formatting-table (stream :x-spacing 10 :y-spacing 10)
     (dotimes (row 4)
       (clim:formatting-row (stream)
         (dotimes (column 4)
-          (clim:formatting-cell (stream)
-            (draw-board-cell stream (game-board 2048-game) row column)))))))
+          (clim:formatting-cell (stream :align-x :center :align-y :center)
+            (draw-board-cell stream (game-board 2048-game) row column))))))
+  #+nil(clim:with-room-for-graphics (stream)                              ;FIXME do I need it?
+                                    (clim:with-translation (stream 10 10) ;FIXME why this doesn't work?
+                                                           )))
 
 (defmethod draw-score-box ((2048-game 2048-game) stream &key max-width max-height)
   (declare (ignore max-width max-height))

@@ -32,7 +32,7 @@
                         (16384 ,(hex->color #x3C #x3A #x32) ,(hex->color #xF9 #xF6 #xF2) 20)))
 
 (defvar *game-highscore* 0)
-(defvar *game-timer* nil)
+(defvar *game-timer* nil)               ;FIXME move it into the application frame, to keep things in order.
 
 
 ;;; game UI elements and layout
@@ -95,8 +95,7 @@
           (apply #'format nil format-string format-args))))
 
 
-;;; game logic
-;;; TODO
+;;; game UI logic
 
 (defun game-timer-started ()
   *game-timer*)
@@ -120,23 +119,66 @@
         "00:00:00")))
 
 
+;;; game logic
+;;; TODO
+
+(defun move (board direction)
+  (insert-next-tile board)
+  (when (defeatp board)
+    ;; TODO initiate defeat behaviour
+    (return-from move))
+  (do-move board direction)
+  (when (victoryp board)
+    ;; TODO initiate victory behaviour
+    ))
+
+(defun do-move (board direction)
+  (declare (ignore board direction))
+  ;; TODO
+  )
+
+(defun insert-next-tile (board)
+  (declare (ignore board))
+  ;; TODO
+  ;; find empty spots, then pick one at random, and insert a value there
+  )
+
+(defun victoryp (board)
+  (dotimes (cols 4)
+    (dotimes (rows 4)
+      (when (= (aref board cols rows) 2048)
+        (return-from victoryp t))))     ;;)
+  (return-from victoryp nil))           ;;)))
+
+(defun defeatp (board)
+  (declare (ignore board))
+  ;; TODO
+  ;; defeat when no neighbouring tiles with the same value and no space for insertion left
+  nil
+  )
+
+
 ;;; input
 ;;; TODO Figure out one day how to use arrow keys instead.
 (define-2048-game-command (move-left :keystroke #\a)
     ()
-  (debug-format "CMD: Move left invoked!"))
+  (debug-format "CMD: Move left invoked!")
+  (move (game-board clim:*application-frame*) :left))
 
 (define-2048-game-command (move-right :keystroke #\d)
     ()
-  (debug-format "CMD: Move right invoked!"))
+  (debug-format "CMD: Move right invoked!")
+  (move (game-board clim:*application-frame*) :right))
 
 (define-2048-game-command (move-up :keystroke #\w)
     ()
-  (debug-format "CMD: Move up invoked!"))
+  (debug-format "CMD: Move up invoked!")
+  (move (game-board clim:*application-frame*) :up))
 
 (define-2048-game-command (move-down :keystroke #\s)
     ()
-  (debug-format "CMD: Move down invoked!"))
+  (debug-format "CMD: Move down invoked!")
+  (move (game-board clim:*application-frame*) :down))
 
 
 ;;; drawing
